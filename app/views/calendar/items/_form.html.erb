@@ -1,0 +1,68 @@
+<%# locals: (item:) %>
+<%# An item written, laid out like an editor: the title, what it says, the link and image, and each channel with its own text (blank uses what it says) in the main column; what it is and when in the save box beside it. %>
+<% channels = Calendar::Channel.ordered.to_a %>
+<% chosen = item.deliveries.reject(&:marked_for_destruction?).index_by(&:channel_id) %>
+<% images = Asset.order(created_at: :desc).limit(60).select(&:image?) %>
+<%= form_with model: item, url: (item.persisted? ? calendar_item_path(item) : calendar_items_path), scope: :item, id: "calendar_item_form", class: "editor" do |form| %>
+  <div class="editor__main">
+    <div>
+      <label class="visually-hidden" for="item_title">Title</label>
+      <%= form.text_field :title, class: "title-input", placeholder: "What it's about", autofocus: item.new_record? %>
+    </div>
+
+    <%= render "layouts/shared/errors", record: item %>
+
+    <%= postbox "calendar-item-message", "What it says" do %>
+      <%= settings_field "Message", hint: "The message, or what the post or page is about. Each channel uses it unless it has its own text below." do %>
+        <%= form.text_area :body, rows: 5 %>
+      <% end %>
+      <div class="grid grid--2 fields-grid">
+        <%= settings_field "Link", hint: "Blank: its post or page on the site, once live." do %>
+          <%= form.url_field :link_url, placeholder: "https://…" %>
+        <% end %>
+        <%= settings_field "Image", hint: "Instagram needs one. From the media library's latest images." do %>
+          <%= form.select :asset_id, [["None", ""]] + images.map { [it.title, it.id] }, selected: item.asset_id %>
+        <% end %>
+      </div>
+      <%= settings_field "Notes" do %>
+        <%= form.text_area :notes, rows: 2 %>
+      <% end %>
+    <% end %>
+
+    <%= postbox "calendar-item-channels", "Channels" do %>
+      <% if channels.any? %>
+        <%= hidden_field_tag "item[channel_ids][]", "", id: nil %>
+        <div class="stack stack--md">
+          <% channels.each do |channel| %>
+            <%# herb:key channel.id %>
+            <% delivery = chosen[channel.id] %>
+            <div class="stack stack--xs">
+              <label class="choice">
+                <%= check_box_tag "item[channel_ids][]", channel.id, delivery.present?, id: "item_channel_#{channel.id}", disabled: delivery&.sent? %>
+                <span><%= calendar_network channel.network %> <%= channel.label %><%= " · #{channel.state}" unless channel.connected? %></span>
+              </label>
+              <%= text_area_tag "item[texts][#{channel.id}]", delivery&.text, rows: 3, maxlength: channel.limit, disabled: delivery&.sent?, id: "item_text_#{channel.id}",
+                    placeholder: "Blank uses the message; or have the AI draft it. Up to #{number_with_delimiter channel.limit} characters.", aria: {label: "Text for #{channel.label}"} %>
+            </div>
+          <% end %>
+        </div>
+      <% else %>
+        <p class="text-small text-muted">No channels yet. <%= link_to "Connect Facebook, Instagram, LinkedIn, X or the Business Profile", settings_calendar_path, class: "link" %>.</p>
+      <% end %>
+    <% end %>
+  </div>
+
+  <aside class="editor__aside">
+    <% details = capture do %>
+      <div class="fields">
+        <%= settings_field "What it is" do %>
+          <%= form.select :kind, Calendar::Item::KINDS.map { |key, label| [label, key] } %>
+        <% end %>
+        <%= settings_field "When", hint: "A date to plan around; scheduling it to go out is a separate step." do %>
+          <%= form.datetime_local_field :scheduled_at, value: item.scheduled_at&.strftime("%Y-%m-%dT%H:%M") %>
+        <% end %>
+      </div>
+    <% end %>
+    <%= render "layouts/shared/save_box", key: "calendar-item-save", button: item.new_record? ? "Add to the calendar" : "Save changes", extra: details %>
+  </aside>
+<% end %>

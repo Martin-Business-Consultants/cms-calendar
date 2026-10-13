@@ -1,0 +1,106 @@
+<%# locals: (item:) %>
+<%# One item in the right-hand column: what it is and when, its record on the site, each channel's post and how it went, and what can be done: edit it, have the AI write each channel's post, start its post or page, schedule it, send it now, delete it. %>
+<% can_write = Current.user.can?("calendar:write") %>
+<% can_publish = Current.user.can?("calendar:publish") %>
+<div class="stack stack--md">
+  <div class="stack stack--xs">
+    <div class="cluster cluster--sm">
+      <%= calendar_state_tag item %>
+      <span class="text-small text-muted"><%= item.kind_label %> · <%= calendar_when item %></span>
+    </div>
+    <h2 class="heading heading--lg"><%= item.title %></h2>
+    <% if item.body.present? %><p class="calendar-text"><%= item.body %></p><% end %>
+    <% if item.notes.present? %><p class="text-small text-muted calendar-text"><%= item.notes %></p><% end %>
+  </div>
+
+  <dl class="calendar-facts text-small">
+    <% if item.link %><dt>Links to</dt><dd><%= link_to item.link, item.link, class: "link", target: "_blank", rel: "noopener" %></dd><% end %>
+    <% if item.asset %><dt>Image</dt><dd><%= item.asset.title %><%= " (no public address yet: Instagram and the Business Profile need one)" unless item.image_url %></dd><% end %>
+    <% if item.subject %>
+      <dt>On the site</dt>
+      <dd>
+        <% record = item.subject %>
+        <%= link_to record.title, record.is_a?(::Page) ? edit_page_path(record.path) : edit_collection_entry_path(record.collection.slug, record.slug), class: "link", data: {turbo_frame: "_top"} %>
+        <span class="text-muted">(<%= record.status %><%= ", publishes #{l record.publish_at, format: :long}" if record.try(:publish_at) && record.status != "published" %>)</span>
+      </dd>
+    <% end %>
+  </dl>
+
+  <% if item.draft_state.in?(%w[queued running]) && item.updated_at > 15.minutes.ago %>
+    <p class="calendar-notice text-small" data-controller="refresh" data-refresh-interval-value="5"><%= icon_tag "ai" %> The AI is writing each channel's post. A minute or so.</p>
+  <% elsif item.draft_state == "failed" %>
+    <p class="notice notice--danger text-small" role="status">The AI didn't finish: <%= item.draft_error %></p>
+  <% end %>
+
+  <% if item.deliveries.any? %>
+    <section class="stack stack--xs">
+      <h3 class="label">Posts</h3>
+      <ul class="divided">
+        <% item.deliveries.each do |delivery| %>
+          <%# herb:key delivery.id %>
+          <% text = delivery.text_or_body %>
+          <li class="stack stack--xs calendar-delivery">
+            <span class="row row--between">
+              <span class="cluster cluster--sm"><%= calendar_network delivery.channel.network %><strong class="text-small"><%= delivery.channel.label %></strong></span>
+              <span class="<%= class_names("text-small", "text-danger": text.size > delivery.channel.limit, "text-muted": text.size <= delivery.channel.limit) %>"><%= text.size %>/<%= number_with_delimiter delivery.channel.limit %></span>
+            </span>
+            <% if text.present? %>
+              <span class="text-small calendar-text"><%= text %></span>
+            <% else %>
+              <span class="text-small text-muted">No text yet: write it, or have the AI draft it.</span>
+            <% end %>
+            <% if delivery.sent? %>
+              <span class="text-small"><%= status_tag "published" %> <%= delivery.external_url ? link_to("See it", delivery.external_url, class: "link", target: "_blank", rel: "noopener") : "Sent" %> · <%= l delivery.sent_at, format: :long %></span>
+            <% elsif delivery.state == "failed" %>
+              <span class="text-small text-danger"><%= delivery.error %></span>
+            <% end %>
+          </li>
+        <% end %>
+      </ul>
+    </section>
+  <% elsif item.kind == "social" %>
+    <p class="text-small text-muted">No channels chosen. <%= link_to "Connect channels", settings_calendar_path, class: "link", data: {turbo_frame: "_top"} %>, then edit it to choose.</p>
+  <% end %>
+
+  <% if can_write %>
+    <div class="cluster cluster--sm">
+      <% if item.editable? || item.state == "scheduled" %>
+        <%= link_to "Edit", edit_calendar_item_path(item), class: "btn btn--sm", data: {turbo_frame: "_top"} %>
+      <% end %>
+      <% if item.deliveries.any? { !it.sent? } && Calendar.ai? && item.editable? %>
+        <%= button_to calendar_item_draft_path(item), class: "btn btn--sm", form_class: "contents" do %><%= icon_tag "ai" %> <span>Draft the posts with AI</span><% end %>
+      <% end %>
+      <% if item.kind.in?(%w[post page]) && item.subject.nil? %>
+        <%= button_to calendar_item_record_path(item), class: "btn btn--sm", form_class: "contents", form: {data: {turbo_frame: "_top"}} do %>
+          <%= icon_tag "document" %> <span>Start the <%= item.kind %> on the site</span>
+        <% end %>
+      <% end %>
+    </div>
+  <% end %>
+
+  <% if can_publish %>
+    <% if item.state.in?(%w[idea draft failed]) %>
+      <%= form_with url: calendar_item_schedule_path(item), method: :post, class: "cluster cluster--sm" do |form| %>
+        <%= form.datetime_local_field :at, value: (item.scheduled_at || 1.day.from_now.change(hour: 10)).strftime("%Y-%m-%dT%H:%M"), aria: {label: "When it goes out"}, class: "calendar-when" %>
+        <button type="submit" class="btn btn--sm btn--primary">Schedule</button>
+      <% end %>
+      <% if item.deliveries.any? { !it.sent? } %>
+        <div>
+          <%= button_to (item.state == "failed") ? "Send what didn't go" : "Send now", calendar_item_dispatch_path(item), class: "btn btn--sm", form_class: "contents",
+                data: {turbo_confirm: "Post to #{item.deliveries.reject(&:sent?).map { it.channel.label }.to_sentence} now?"} %>
+        </div>
+      <% end %>
+    <% elsif item.state == "scheduled" %>
+      <div><%= button_to "Take it off the schedule", calendar_item_schedule_path(item), method: :delete, class: "btn btn--sm", form_class: "contents" %></div>
+    <% end %>
+  <% elsif item.editable? %>
+    <p class="text-small text-muted">Scheduling it is publishing: a person with Calendar › publish does that.</p>
+  <% end %>
+
+  <% if can_write && item.state != "published" %>
+    <div>
+      <%= button_to "Delete", calendar_item_path(item), method: :delete, class: "btn btn--sm btn--plain", form_class: "contents", form: {data: {turbo_frame: "_top"}},
+            data: {turbo_confirm: "Delete “#{item.title}”?"} %>
+    </div>
+  <% end %>
+</div>

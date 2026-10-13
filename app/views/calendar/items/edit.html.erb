@@ -1,0 +1,3 @@
+<% @page_title = @item.title %>
+<%= parent_page "Calendar", calendar_path(month: @item.scheduled_at&.strftime("%Y-%m"), item: @item.id) %>
+<%= render "calendar/items/form", item: @item %>

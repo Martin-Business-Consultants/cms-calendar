@@ -1,0 +1,209 @@
+/* Calendar (cms-calendar): the month, its items as chips coloured by state,
+   a channel's network as a small badge, and the open item beside it. Drawn
+   with the admin's tokens (STYLE.md), so it follows Settings › Branding and
+   the dark theme. */
+@layer components {
+  .calendar-split {
+    align-items: start;
+
+    @media (width >= 64rem) {
+      grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+    }
+  }
+
+  .calendar-head {
+    padding: var(--space-3) var(--space-4);
+  }
+
+  .calendar-month {
+    border-block-start: 1px solid var(--gray-200);
+    display: grid;
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+  }
+
+  .calendar-weekday {
+    padding: var(--space-1) var(--space-2);
+    text-align: center;
+  }
+
+  .calendar-day {
+    border-block-start: 1px solid var(--gray-100);
+    border-inline-start: 1px solid var(--gray-100);
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-block-size: 6.5rem;
+    min-inline-size: 0;
+    padding: var(--space-1);
+
+    &:nth-child(7n + 1) {
+      border-inline-start: 0;
+    }
+
+    &:hover .calendar-add {
+      opacity: 1;
+    }
+  }
+
+  .calendar-day--outside {
+    background-color: var(--gray-50);
+
+    .calendar-date {
+      color: var(--gray-400);
+    }
+  }
+
+  .calendar-day--today .calendar-date {
+    background-color: var(--accent-600);
+    border-radius: 999px;
+    color: white;
+    padding-inline: 0.45em;
+  }
+
+  .calendar-add {
+    color: var(--gray-500);
+    opacity: 0;
+    text-decoration: none;
+
+    &:focus-visible {
+      opacity: 1;
+    }
+  }
+
+  .calendar-chip {
+    border-inline-start: 3px solid var(--gray-300);
+    border-radius: var(--radius-sm);
+    color: var(--gray-900);
+    display: flex;
+    flex-direction: column;
+    font-size: var(--text-xs);
+    gap: 2px;
+    line-height: 1.3;
+    min-inline-size: 0;
+    padding: 2px 4px;
+    text-decoration: none;
+  }
+
+  /* The title, up to two lines, over its channels. */
+  .calendar-chip__title {
+    -webkit-box-orient: vertical;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    overflow: hidden;
+    overflow-wrap: anywhere;
+  }
+
+  .calendar-chip__nets {
+    display: flex;
+    gap: 1px;
+  }
+
+  .calendar-chip--idea {
+    background-color: var(--gray-50);
+    border-inline-start-style: dashed;
+  }
+
+  .calendar-chip--draft {
+    background-color: var(--gray-100);
+    border-inline-start-color: var(--gray-500);
+  }
+
+  .calendar-chip--scheduled {
+    background-color: var(--accent-50);
+    border-inline-start-color: var(--accent-600);
+  }
+
+  .calendar-chip--published {
+    background-color: color-mix(in oklch, var(--green-500) 12%, transparent);
+    border-inline-start-color: var(--green-500);
+  }
+
+  .calendar-chip--failed {
+    background-color: color-mix(in oklch, var(--red-500) 12%, transparent);
+    border-inline-start-color: var(--red-500);
+  }
+
+  .calendar-chip--current {
+    outline: 2px solid var(--accent-600);
+  }
+
+  .calendar-legend {
+    > .calendar-chip {
+      display: inline-flex;
+    }
+
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+    padding: var(--space-3) var(--space-4);
+  }
+
+  .calendar-net {
+    background-color: var(--gray-200);
+    border-radius: var(--radius-sm);
+    color: var(--gray-700);
+    font-size: 0.65rem;
+    font-weight: var(--weight-semibold);
+    line-height: 1.4;
+    padding-inline: 3px;
+    text-transform: lowercase;
+  }
+
+  .calendar-detail {
+    @media (width >= 64rem) {
+      inset-block-start: var(--space-4);
+      max-block-size: calc(100dvh - var(--space-8));
+      overflow-y: auto;
+      position: sticky;
+    }
+  }
+
+  .calendar-row {
+    align-items: center;
+    color: inherit;
+    display: flex;
+    gap: var(--space-3);
+    padding: var(--space-2) 0;
+    text-decoration: none;
+  }
+
+  .calendar-text {
+    overflow-wrap: anywhere;
+    white-space: pre-line;
+  }
+
+  .calendar-facts {
+    display: grid;
+    gap: var(--space-1) var(--space-4);
+    grid-template-columns: 7rem minmax(0, 1fr);
+    margin: 0;
+
+    > dt {
+      color: var(--gray-600);
+    }
+
+    > dd {
+      margin: 0;
+    }
+  }
+
+  .calendar-delivery {
+    padding-block: var(--space-3);
+  }
+
+  .calendar-idea {
+    padding: var(--space-3) var(--space-4);
+  }
+
+  .calendar-notice {
+    background-color: var(--accent-50);
+    border: 1px solid var(--accent-100);
+    border-radius: var(--radius-lg);
+    padding: var(--space-2) var(--space-3);
+  }
+
+  .calendar-when {
+    inline-size: auto;
+  }
+}

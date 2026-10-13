@@ -1,0 +1,62 @@
+<% @page_title = "Ideas" %>
+<% can_write = Current.user.can?("calendar:write") %>
+
+<% content_for :page_actions do %>
+  <%= link_to "Calendar", calendar_path, class: "btn" %>
+<% end %>
+<%= render "layouts/shared/page_header", title: "Ideas" %>
+
+<div class="grid grid--2 calendar-split">
+  <section class="panel" aria-label="Ideas">
+    <% if @ideas.any? %>
+      <ul class="divided">
+        <% @ideas.each do |idea| %>
+          <%# herb:key idea.source %>
+          <li class="stack stack--xs calendar-idea">
+            <span class="cluster cluster--sm"><strong><%= idea.title %></strong><span class="badge"><%= Calendar::Item::KINDS[idea.kind] %></span></span>
+            <% if idea.detail.present? %><span class="text-small text-muted calendar-text"><%= idea.detail.truncate(280) %></span><% end %>
+            <span class="text-small text-faint"><%= idea.origin %></span>
+            <% if can_write %>
+              <%= form_with url: calendar_ideas_path, method: :post, class: "cluster cluster--sm" do |form| %>
+                <%= form.hidden_field :source, value: idea.source, id: nil %>
+                <%= form.date_field :on, min: Date.current.iso8601, aria: {label: "On"}, id: nil, class: "calendar-when" %>
+                <button type="submit" class="btn btn--sm">Add to the calendar</button>
+              <% end %>
+            <% end %>
+          </li>
+        <% end %>
+      </ul>
+    <% else %>
+      <p class="empty-state">No ideas waiting. They come from Market (opportunities and the AI's suggested posts) and Google (searches the site is close on).</p>
+    <% end %>
+  </section>
+
+  <section class="panel panel--padded stack stack--md calendar-detail" aria-label="Plan with the AI">
+    <div class="stack stack--xs">
+      <h2 class="heading"><%= icon_tag "ai" %> Plan with the AI</h2>
+      <p class="text-small text-muted">The AI plans posts for the site and social posts on dates, from Market's plan and angle, the opportunities, the searches the business wants to win and what Google says people search, around what's on the calendar already. They land as ideas to keep, move or delete.</p>
+    </div>
+    <% if @planning %>
+      <p class="calendar-notice text-small" data-controller="refresh" data-refresh-interval-value="5"><%= icon_tag "refresh" %> Planning. A minute or so.</p>
+    <% elsif @plan_state["plan_error"].present? %>
+      <p class="notice notice--danger text-small" role="status">The last plan didn't finish: <%= @plan_state["plan_error"] %></p>
+    <% end %>
+    <% if can_write && !@planning %>
+      <% if Calendar.ai? %>
+        <%= form_with url: calendar_plans_path, method: :post, class: "fields" do |form| %>
+          <div class="grid grid--2 fields-grid">
+            <%= settings_field "From" do %><%= form.date_field :from, value: Date.tomorrow.iso8601 %><% end %>
+            <%= settings_field "To" do %><%= form.date_field :to, value: (Date.tomorrow + 27).iso8601 %><% end %>
+          </div>
+          <%= settings_field "A week" do %><%= form.select :per_week, (1..7).map { [pluralize(it, "post"), it] }, selected: 3 %><% end %>
+          <div><button type="submit" class="btn btn--primary">Plan it</button></div>
+        <% end %>
+      <% else %>
+        <p class="text-small text-muted"><%= Ai.unavailable_reason %>.</p>
+      <% end %>
+    <% end %>
+    <% if @plan_state["planned_at"].present? %>
+      <p class="text-small text-muted">Last planned <%= time_ago_in_words(Time.zone.parse(@plan_state["planned_at"])) %> ago: its ideas are on the <%= link_to "calendar", calendar_path, class: "link" %>.</p>
+    <% end %>
+  </section>
+</div>

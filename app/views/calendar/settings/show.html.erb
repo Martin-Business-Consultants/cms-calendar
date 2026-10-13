@@ -1,0 +1,87 @@
+<% @page_title = "Calendar" %>
+<% can_write = Current.user.can?("settings:write") %>
+<% apps = {"meta" => {name: "Meta (Facebook Pages and Instagram)", console: "https://developers.facebook.com/apps", help: "A Business app with Facebook Login for Business; add the redirect URI as a valid OAuth redirect URI. Posting to Pages and Instagram needs Meta's app review for pages_manage_posts and instagram_content_publish (an admin of the app can post before review)."},
+          "linkedin" => {name: "LinkedIn", console: "https://www.linkedin.com/developers/apps", help: "Add the products Share on LinkedIn and Sign In with LinkedIn using OpenID Connect; for company Pages, request the Community Management API. Add the redirect URI under Auth."},
+          "x" => {name: "X", console: "https://developer.x.com/en/portal/dashboard", help: "In the app's User authentication settings: OAuth 2.0, Web App (confidential client), read and write; add the redirect URI as a callback."}} %>
+
+<%= render "layouts/shared/page_header", title: "Calendar" %>
+<% content_for :settings_aside do %>
+  <%= render "settings/save_box", form: "calendar_settings_form", capability: "settings:write" %>
+<% end %>
+
+<section class="panel panel--padded stack stack--sm">
+  <div class="stack stack--xs">
+    <h2 class="heading">Channels</h2>
+    <p class="text-muted">The accounts the calendar posts to. Each network signs in through an app of your own, below; the Business Profile through Settings › Google.</p>
+  </div>
+  <% if @channels.any? %>
+    <ul class="divided">
+      <% @channels.each do |channel| %>
+        <%# herb:key channel.id %>
+        <li class="row row--between calendar-row">
+          <span class="cluster cluster--sm">
+            <%= calendar_network channel.network %>
+            <strong><%= channel.label %></strong>
+            <% if channel.handle %><span class="text-small text-muted">@<%= channel.handle %></span><% end %>
+            <%= status_tag (channel.connected? ? "active" : channel.state) %>
+            <% if channel.error.present? %><span class="text-small text-danger"><%= channel.error %></span><% end %>
+          </span>
+          <% if can_write %>
+            <%= button_to "Remove", settings_calendar_channel_path(channel), method: :delete, class: "btn btn--sm btn--plain", form_class: "contents",
+                  data: {turbo_confirm: "Stop posting to #{channel.label}? Its posts' history goes with it."} %>
+          <% end %>
+        </li>
+      <% end %>
+    </ul>
+  <% else %>
+    <p class="text-small text-muted">None yet.</p>
+  <% end %>
+  <% if can_write %>
+    <div class="cluster cluster--sm">
+      <% apps.each do |key, app| %>
+        <%# herb:key key %>
+        <% if @settings.app?(key) %>
+          <%= link_to "Connect #{app[:name].split(" (").first}", connect_settings_calendar_path(network: key), class: "btn", data: {turbo: false} %>
+        <% end %>
+      <% end %>
+      <% if Calendar.google_business? %>
+        <%= link_to "Connect the Business Profile", connect_settings_calendar_path(network: "google_business"), class: "btn", data: {turbo: false} %>
+      <% else %>
+        <span class="text-small text-muted">Business Profile: connect it in <%= link_to "Settings › Google", (respond_to?(:settings_google_path) ? settings_google_path : "#"), class: "link" %> first.</span>
+      <% end %>
+    </div>
+  <% end %>
+</section>
+
+<%= form_with url: settings_calendar_path, id: "calendar_settings_form", method: :patch, scope: :calendar do |form| %>
+  <%= tag.fieldset class: "stack stack--lg", disabled: !can_write do %>
+    <% apps.each do |key, app| %>
+      <%# herb:key key %>
+      <section class="panel panel--padded fields">
+        <div class="stack stack--xs">
+          <h2 class="heading"><%= app[:name] %></h2>
+          <p class="text-muted text-small"><%= app[:help] %> <%= link_to "Developer console", app[:console], class: "link", target: "_blank", rel: "noopener" %></p>
+        </div>
+        <%= settings_field "Redirect URI" do %>
+          <code class="text-small"><%= callback_settings_calendar_url(network: key) %></code>
+        <% end %>
+        <div class="grid grid--2 fields-grid">
+          <%= settings_field ((key == "meta") ? "App ID" : "Client ID") do %>
+            <%= form.text_field :"#{key}_app_id", value: @settings.app_id(key), autocomplete: "off" %>
+          <% end %>
+          <%= settings_field ((key == "meta") ? "App secret" : "Client secret"), hint: (@settings.app_secret(key) ? "Saved. Leave blank to keep it." : nil) do %>
+            <%= form.password_field :"#{key}_app_secret", value: nil, autocomplete: "new-password", data: {"1p-ignore": true} %>
+          <% end %>
+        </div>
+      </section>
+    <% end %>
+
+    <section class="panel panel--padded fields">
+      <div class="stack stack--xs">
+        <h2 class="heading">How posts read</h2>
+        <p class="text-muted">For the AI, beyond the brand brief (Settings › Brand context): hashtags to use, emoji or not, a sign-off.</p>
+      </div>
+      <%= form.text_area :social_guidance, value: @settings.social_guidance, rows: 3, aria: {label: "How posts read"}, placeholder: "Always #GrandRapids; no emoji on LinkedIn; end with “Book online in a minute.”" %>
+    </section>
+  <% end %>
+<% end %>

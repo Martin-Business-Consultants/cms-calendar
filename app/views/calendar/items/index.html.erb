@@ -1,0 +1,80 @@
+<% @page_title = "Calendar" %>
+<% can_write = Current.user.can?("calendar:write") %>
+<% today = Date.current %>
+
+<% content_for :page_actions do %>
+  <%= link_to "Ideas", calendar_ideas_path, class: "btn" %>
+  <% if can_write %><%= link_to "Add New", new_calendar_item_path, class: "btn" %><% end %>
+<% end %>
+<%= render "layouts/shared/page_header", title: "Calendar" %>
+
+<%# The month and the open item in one frame: opening one swaps the right-hand column, keeping the address. %>
+<turbo-frame id="calendar" data-turbo-action="advance">
+  <div class="grid grid--2 calendar-split">
+    <section class="panel" aria-label="<%= l @month, format: "%B %Y" %>">
+      <div class="row row--between calendar-head">
+        <%= link_to calendar_path(month: @month.prev_month.strftime("%Y-%m")), class: "btn btn--sm btn--plain", aria: {label: "The month before"} do %><%= icon_tag "arrow-left" %><% end %>
+        <h2 class="heading"><%= l @month, format: "%B %Y" %></h2>
+        <%= link_to calendar_path(month: @month.next_month.strftime("%Y-%m")), class: "btn btn--sm btn--plain", aria: {label: "The month after"} do %><%= icon_tag "arrow-right" %><% end %>
+      </div>
+      <div class="calendar-month" role="grid">
+        <% %w[Mon Tue Wed Thu Fri Sat Sun].each do |day| %>
+          <%# herb:key day %>
+          <div class="calendar-weekday text-small text-muted" role="columnheader"><%= day %></div>
+        <% end %>
+        <% @days.each do |day| %>
+          <%# herb:key day.iso8601 %>
+          <div class="<%= class_names("calendar-day", "calendar-day--today": day == today, "calendar-day--outside": day.month != @month.month) %>" role="gridcell">
+            <div class="row row--between">
+              <span class="text-small calendar-date"><%= day.day %></span>
+              <% if can_write && day >= today %>
+                <%= link_to new_calendar_item_path(on: day.iso8601), class: "calendar-add", data: {turbo_frame: "_top"}, aria: {label: "Add on #{l day, format: :long}"} do %><%= icon_tag "add" %><% end %>
+              <% end %>
+            </div>
+            <% Array(@items[day]).each do |item| %>
+              <%# herb:key item.id %>
+              <%= link_to calendar_path(month: @month.strftime("%Y-%m"), item: item.id), class: class_names("calendar-chip", calendar_chip_class(item), "calendar-chip--current": item == @item),
+                    title: "#{item.title} · #{item.kind_label} · #{item.state}" do %>
+                <span class="calendar-chip__title"><%= item.title %></span>
+                <span class="calendar-chip__nets"><% item.deliveries.map { it.channel.network }.uniq.each do |network| %><%# herb:key network %><%= calendar_network network %><% end %></span>
+              <% end %>
+            <% end %>
+          </div>
+        <% end %>
+      </div>
+      <p class="text-small text-muted calendar-legend">
+        <span class="calendar-chip calendar-chip--idea">Idea</span> <span class="calendar-chip calendar-chip--draft">Draft</span>
+        <span class="calendar-chip calendar-chip--scheduled">Scheduled</span> <span class="calendar-chip calendar-chip--published">Published</span>
+        <span class="calendar-chip calendar-chip--failed">Failed</span>
+      </p>
+    </section>
+
+    <section class="panel panel--padded calendar-detail" aria-label="The item">
+      <% if @item %>
+        <%= render "calendar/items/detail", item: @item %>
+      <% else %>
+        <div class="stack stack--md">
+          <div class="stack stack--xs">
+            <h2 class="heading">Not scheduled yet</h2>
+            <p class="text-small text-muted">Ideas and drafts without a date. Open one to write it, have the AI draft each channel's post, and schedule it.</p>
+          </div>
+          <% if @unscheduled.any? %>
+            <ul class="divided">
+              <% @unscheduled.each do |item| %>
+                <%# herb:key item.id %>
+                <li>
+                  <%= link_to calendar_path(month: @month.strftime("%Y-%m"), item: item.id), class: "calendar-row" do %>
+                    <span class="grow"><%= item.title %><span class="text-small text-muted"> · <%= item.kind_label %></span></span>
+                    <%= calendar_state_tag item %>
+                  <% end %>
+                </li>
+              <% end %>
+            </ul>
+          <% else %>
+            <p class="text-small text-muted">Nothing waiting. <%= link_to "Ideas from Market and Google", calendar_ideas_path, class: "link", data: {turbo_frame: "_top"} %>, or have the AI plan the month there.</p>
+          <% end %>
+        </div>
+      <% end %>
+    </section>
+  </div>
+</turbo-frame>
