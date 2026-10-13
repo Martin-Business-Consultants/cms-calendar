@@ -5,18 +5,27 @@ for the business. What goes out when, on the site (posts and pages, published on
 its social channels, **Facebook Pages, Instagram, LinkedIn (profile and company Pages), X and the Google
 Business Profile**, posted directly to each network by the CMS when it's due.
 
-- **The month**, with each item beside it: a social post, a post or page on the site, or a note; its
-  posts for each channel and how each went (a link to the post, or why it failed).
-- **Ideas** from [Market](https://github.com/Martin-Business-Consultants/cms-market) (open opportunities and
-  the posts its AI suggested) and [Google](https://github.com/Martin-Business-Consultants/cms-google)
-  (searches the site is close on), taken onto a date in one click.
-- **Plan with the AI** ([cms-ai](https://github.com/Martin-Business-Consultants/cms-ai)): a stretch of the
-  calendar planned as ideas from Market's plan and angle, the opportunities, the searches to win and what
-  Google says people search, around what's planned already.
-- **Draft the posts with AI**: each channel's text in its shape and length, from the item, its link and
-  the business's plan; read and edit before it goes.
-- **A post or page on the site** starts as a draft in the CMS; scheduling the item sets it to publish
-  then, and its posts link to it once it's live.
+## How it works
+
+**Ideas → Write → Schedule → Published**, shown across the top of the Calendar and Ideas, with how many
+are at each step.
+
+1. **Ideas** come from [Market](https://github.com/Martin-Business-Consultants/cms-market) and
+   [Google](https://github.com/Martin-Business-Consultants/cms-google), the most timely first: searches
+   coming into season (a tracked search, or one worth writing about, that peaks within a few months,
+   dated two months before its peak so the post has time to rank), the plan's opportunities (with the
+   goal each serves), searches worth writing about (with searches a month and difficulty), the posts
+   Market's AI suggested, and searches Google says the site is close on. Take one onto the calendar in a
+   click, on its suggested date or another. Or **plan with the AI**
+   ([cms-ai](https://github.com/Martin-Business-Consultants/cms-ai)): a stretch of the calendar from
+   Market's plan and goals, these ideas (seasonal ones before their date) and what Google says people
+   search, around what's planned already.
+2. **Write**: open an item beside the month; it says what's next. A post or page on the site starts as a
+   draft in the CMS; a social post gets each channel's text, written by hand or drafted by the AI.
+3. **Schedule**: give it a time. A post or page on the site publishes then; its social posts go out when
+   it's due, and link to it once it's live.
+4. **Published**: each channel's post links to where it went, or says why it didn't.
+
 - **Scheduling is publishing**: it takes `calendar:publish` (editors have it); authors and the Agent role
   write and draft (`calendar:read`, `calendar:write`), and a person schedules. Each item is claimed before
   it's sent, so it never goes out twice; a channel that fails keeps why, and the rest still go.
@@ -44,7 +53,7 @@ Tokens are encrypted and never read back.
     cms get "/api/calendar/items?from=2026-11-01&to=2026-11-30"
     cms post /api/calendar/items '{"item":{"title":"…","kind":"social","body":"…","channel_ids":[1,2]}}'
     cms post /api/calendar/items/7/draft '{}'          # the AI writes each channel's post
-    cms get /api/calendar/ideas                         # from Market and Google
+    cms get /api/calendar/ideas                         # from Market and Google, timely first; each with facts and a suggested date (on)
     cms post /api/calendar/plans '{"from":"2026-11-01","to":"2026-11-28","per_week":3}'
     cms post /api/calendar/items/7/schedule '{"at":"2026-11-04T10:00:00Z"}'   # calendar:publish: a person's call
 

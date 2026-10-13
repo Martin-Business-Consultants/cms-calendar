@@ -1,8 +1,9 @@
 # frozen_string_literal: true
 
 # What the AI is told about the business for the calendar: the brand brief,
-# Market's profile and plan (the big picture and the angle to win on), and
-# Google's searches when they're there. Every draft and plan serves that.
+# Market's profile and plan (the big picture and the angle to win on), the
+# searches coming into season and worth writing about, and Google's searches
+# when they're there. Every draft and plan serves that.
 module Calendar::Context
   module_function
 
@@ -26,6 +27,11 @@ module Calendar::Context
       keywords = ::Market::Keyword.ordered.pluck(:keyword)
       parts << "Searches it wants to win: #{keywords.first(20).join(", ")}" if keywords.any?
     end
+    ideas = Calendar::Ideas.new.all
+    seasonal = ideas.select(&:on)
+    parts << "Coming into season (publish by the date given):\n#{seasonal.first(10).map { "- #{it.title}, by #{it.on.to_fs(:long)} (#{it.facts})" }.join("\n")}" if seasonal.any?
+    writing = ideas.select { it.source.start_with?("market:idea:") && !it.on }
+    parts << "Searches worth writing about (searches a month, difficulty out of 100): #{writing.first(10).map { "#{it.title.delete_prefix("Write about ")} (#{it.facts})" }.join("; ")}" if writing.any?
     console = defined?(::Google) && ::Google.respond_to?(:search_console) ? ::Google.search_console : nil
     if console&.queries&.any?
       parts << "What people search on Google to find it (Search Console, 28 days): #{console.queries.first(15).map { it["keys"][0] }.join(", ")}"

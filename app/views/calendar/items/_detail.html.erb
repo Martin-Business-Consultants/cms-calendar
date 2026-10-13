@@ -9,6 +9,7 @@
       <span class="text-small text-muted"><%= item.kind_label %> · <%= calendar_when item %></span>
     </div>
     <h2 class="heading heading--lg"><%= item.title %></h2>
+    <p class="text-small calendar-next"><%= calendar_next_step item %></p>
     <% if item.body.present? %><p class="calendar-text"><%= item.body %></p><% end %>
     <% if item.notes.present? %><p class="text-small text-muted calendar-text"><%= item.notes %></p><% end %>
   </div>
@@ -28,7 +29,7 @@
 
   <% if item.draft_state.in?(%w[queued running]) && item.updated_at > 15.minutes.ago %>
     <p class="calendar-notice text-small" data-controller="refresh" data-refresh-interval-value="5"><%= icon_tag "ai" %> The AI is writing each channel's post. A minute or so.</p>
-  <% elsif item.draft_state == "failed" %>
+  <% elsif item.draft_state == "failed" then %>
     <p class="notice notice--danger text-small" role="status">The AI didn't finish: <%= item.draft_error %></p>
   <% end %>
 
@@ -51,14 +52,14 @@
             <% end %>
             <% if delivery.sent? %>
               <span class="text-small"><%= status_tag "published" %> <%= delivery.external_url ? link_to("See it", delivery.external_url, class: "link", target: "_blank", rel: "noopener") : "Sent" %> · <%= l delivery.sent_at, format: :long %></span>
-            <% elsif delivery.state == "failed" %>
+            <% elsif delivery.state == "failed" then %>
               <span class="text-small text-danger"><%= delivery.error %></span>
             <% end %>
           </li>
         <% end %>
       </ul>
     </section>
-  <% elsif item.kind == "social" %>
+  <% elsif item.kind == "social" then %>
     <p class="text-small text-muted">No channels chosen. <%= link_to "Connect channels", settings_calendar_path, class: "link", data: {turbo_frame: "_top"} %>, then edit it to choose.</p>
   <% end %>
 
@@ -90,10 +91,10 @@
                 data: {turbo_confirm: "Post to #{item.deliveries.reject(&:sent?).map { it.channel.label }.to_sentence} now?"} %>
         </div>
       <% end %>
-    <% elsif item.state == "scheduled" %>
+    <% elsif item.state == "scheduled" then %>
       <div><%= button_to "Take it off the schedule", calendar_item_schedule_path(item), method: :delete, class: "btn btn--sm", form_class: "contents" %></div>
     <% end %>
-  <% elsif item.editable? %>
+  <% elsif item.editable? then %>
     <p class="text-small text-muted">Scheduling it is publishing: a person with Calendar › publish does that.</p>
   <% end %>
 

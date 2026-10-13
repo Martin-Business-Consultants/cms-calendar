@@ -50,7 +50,7 @@ class Calendar::Planner
 
   def system
     [<<~TEXT, Calendar::Context.instructions].compact_blank.join("\n\n")
-      You plan a small business's content calendar: posts for its website and social posts, to win its market. Serve the plan and its angle; turn the opportunities and the searches it wants to win (and those Google says it's close on) into content; mix helpful posts, proof (work done, customers), offers and local news. Don't repeat what's on the calendar already.
+      You plan a small business's content calendar: posts for its website and social posts, to win its market. Serve the plan and its angle; turn the opportunities and the searches it wants to win (and those Google says it's close on) into content; mix helpful posts, proof (work done, customers), offers and local news. Content for a search coming into season goes on or before its date. Don't repeat what's on the calendar already.
       About #{@per_week} a week between #{@from.to_fs(:long)} and #{@to.to_fs(:long)}, at most #{MAX}, on weekdays unless the business suits weekends. Channels: only those connected, given below. Today is #{Date.current.to_fs(:long)}.
     TEXT
   end

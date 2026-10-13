@@ -5,21 +5,30 @@
   <%= link_to "Calendar", calendar_path, class: "btn" %>
 <% end %>
 <%= render "layouts/shared/page_header", title: "Ideas" %>
+<%= render "calendar/shared/flow", current: :ideas %>
 
 <div class="grid grid--2 calendar-split">
   <section class="panel" aria-label="Ideas">
+    <div class="row row--between calendar-head">
+      <h2 class="heading">What to write next</h2>
+      <span class="text-small text-muted">From Market and Google, the most timely first</span>
+    </div>
     <% if @ideas.any? %>
       <ul class="divided">
         <% @ideas.each do |idea| %>
           <%# herb:key idea.source %>
           <li class="stack stack--xs calendar-idea">
-            <span class="cluster cluster--sm"><strong><%= idea.title %></strong><span class="badge"><%= Calendar::Item::KINDS[idea.kind] %></span></span>
+            <span class="cluster cluster--sm">
+              <strong><%= idea.title %></strong>
+              <span class="badge"><%= Calendar::Item::KINDS[idea.kind] %></span>
+              <% if idea.on %><span class="badge badge--warning">By <%= l idea.on, format: :short %></span><% elsif idea.timely then %><span class="badge badge--info">Now</span><% end %>
+            </span>
             <% if idea.detail.present? %><span class="text-small text-muted calendar-text"><%= idea.detail.truncate(280) %></span><% end %>
-            <span class="text-small text-faint"><%= idea.origin %></span>
+            <span class="text-small text-faint"><%= [idea.origin, idea.facts].compact.join(" · ") %></span>
             <% if can_write %>
               <%= form_with url: calendar_ideas_path, method: :post, class: "cluster cluster--sm" do |form| %>
                 <%= form.hidden_field :source, value: idea.source, id: nil %>
-                <%= form.date_field :on, min: Date.current.iso8601, aria: {label: "On"}, id: nil, class: "calendar-when" %>
+                <%= form.date_field :on, value: idea.on&.iso8601, min: Date.current.iso8601, aria: {label: "On"}, id: nil, class: "calendar-when" %>
                 <button type="submit" class="btn btn--sm">Add to the calendar</button>
               <% end %>
             <% end %>
@@ -27,18 +36,18 @@
         <% end %>
       </ul>
     <% else %>
-      <p class="empty-state">No ideas waiting. They come from Market (opportunities and the AI's suggested posts) and Google (searches the site is close on).</p>
+      <p class="empty-state">No ideas waiting. They come from Market (opportunities on its plan, searches worth writing about and those coming into season, the AI's suggested posts) and Google (searches the site is close on).</p>
     <% end %>
   </section>
 
   <section class="panel panel--padded stack stack--md calendar-detail" aria-label="Plan with the AI">
     <div class="stack stack--xs">
       <h2 class="heading"><%= icon_tag "ai" %> Plan with the AI</h2>
-      <p class="text-small text-muted">The AI plans posts for the site and social posts on dates, from Market's plan and angle, the opportunities, the searches the business wants to win and what Google says people search, around what's on the calendar already. They land as ideas to keep, move or delete.</p>
+      <p class="text-small text-muted">Or have the AI plan a stretch at once: posts for the site and social posts on dates, from Market's plan and its goals, these ideas (seasonal ones before their date) and what Google says people search, around what's on the calendar already. They land as ideas on the calendar, to keep, move or delete.</p>
     </div>
     <% if @planning %>
       <p class="calendar-notice text-small" data-controller="refresh" data-refresh-interval-value="5"><%= icon_tag "refresh" %> Planning. A minute or so.</p>
-    <% elsif @plan_state["plan_error"].present? %>
+    <% elsif @plan_state["plan_error"].present? then %>
       <p class="notice notice--danger text-small" role="status">The last plan didn't finish: <%= @plan_state["plan_error"] %></p>
     <% end %>
     <% if can_write && !@planning %>

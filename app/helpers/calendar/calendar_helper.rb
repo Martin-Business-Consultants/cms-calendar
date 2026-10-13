@@ -17,6 +17,22 @@ module Calendar
       tag.span(NETWORK_SHORT.fetch(network, network.first), class: "calendar-net", title: title || Calendar::Channel::NETWORKS.dig(network, :name))
     end
 
+    # Where an item is, and what's next for it, in a line.
+    def calendar_next_step(item)
+      case item.state
+      when "idea"
+        if item.kind.in?(%w[post page]) && item.subject.nil? then "Next: write it. Start the #{item.kind} on the site (a draft), and share it on social once it's up."
+        elsif item.social? then "Next: write it. Edit it, or have the AI draft each channel's post."
+        else "Next: write it, and choose its channels."
+        end
+      when "draft" then item.scheduled_at ? "Next: schedule it for #{l item.scheduled_at, format: :long}, or another time." : "Next: give it a date and schedule it."
+      when "scheduled" then "Scheduled: it goes out by itself #{l item.scheduled_at, format: :long}."
+      when "sending" then "Going out now."
+      when "published" then "Published."
+      else "Some posts didn't go: see why below, then send them again."
+      end
+    end
+
     def calendar_when(item) = item.scheduled_at ? l(item.scheduled_at, format: :long) : "Not scheduled"
   end
 end

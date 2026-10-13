@@ -1,0 +1,31 @@
+<%# locals: (current:) %>
+<%# How the calendar works, one line across the top: ideas come in, they're written, scheduled, and go out. Each step says how many are at it and opens where they are. %>
+<% month = Date.current.beginning_of_month %>
+<% steps = [
+     {key: :ideas, title: "Ideas", note: pluralize(Calendar::Ideas.new.all.size, "waiting", plural: "waiting"), path: calendar_ideas_path},
+     {key: :write, title: "Write", note: "#{Calendar::Item.where(state: %w[idea draft failed]).count} to write", path: calendar_path},
+     {key: :schedule, title: "Schedule", note: "#{Calendar::Item.where(state: %w[scheduled sending]).count} scheduled", path: calendar_path},
+     {key: :published, title: "Published", note: "#{Calendar::Item.where(state: "published", scheduled_at: month.beginning_of_day..).count} this month", path: calendar_path}
+   ] %>
+<nav class="panel calendar-flow" aria-label="How the calendar works">
+  <ol class="calendar-flow__steps">
+    <% steps.each_with_index do |step, index| %>
+      <%# herb:key step[:key] %>
+      <li>
+        <%= link_to step[:path], class: class_names("calendar-flow__step", "calendar-flow__step--current": step[:key] == current), aria: {current: (step[:key] == current ? "step" : nil)}, data: {turbo_frame: "_top"} do %>
+          <span class="calendar-flow__number"><%= index + 1 %></span>
+          <span class="stack stack--2xs">
+            <strong class="text-small"><%= step[:title] %></strong>
+            <span class="text-small text-muted"><%= step[:note] %></span>
+          </span>
+        <% end %>
+      </li>
+    <% end %>
+  </ol>
+  <% unless Calendar::Channel.connected.exists? %>
+    <p class="text-small text-muted calendar-flow__note">
+      No social channels yet: posts and pages for the site work without them.
+      <% if Current.user.can?("settings:read") %><%= link_to "Connect Facebook, Instagram, LinkedIn, X or the Business Profile", settings_calendar_path, class: "link" %>.<% end %>
+    </p>
+  <% end %>
+</nav>

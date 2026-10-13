@@ -7,6 +7,7 @@
   <% if can_write %><%= link_to "Add New", new_calendar_item_path, class: "btn" %><% end %>
 <% end %>
 <%= render "layouts/shared/page_header", title: "Calendar" %>
+<%= render "calendar/shared/flow", current: :write %>
 
 <%# The month and the open item in one frame: opening one swaps the right-hand column, keeping the address. %>
 <turbo-frame id="calendar" data-turbo-action="advance">
@@ -56,7 +57,7 @@
         <div class="stack stack--md">
           <div class="stack stack--xs">
             <h2 class="heading">Not scheduled yet</h2>
-            <p class="text-small text-muted">Ideas and drafts without a date. Open one to write it, have the AI draft each channel's post, and schedule it.</p>
+            <p class="text-small text-muted">Ideas and drafts without a date. Open one (here or on the month) to write it, have the AI draft each channel's post, and schedule it.</p>
           </div>
           <% if @unscheduled.any? %>
             <ul class="divided">

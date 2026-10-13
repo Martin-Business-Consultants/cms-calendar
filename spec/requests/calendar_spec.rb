@@ -45,6 +45,25 @@ RSpec.describe "Calendar", type: :request do
       expect(response.body).not_to include("<h1 class=\"page-title")
     end
 
+    it "shows how the calendar works across the top, and takes an idea from Market's search onto its suggested date" do
+      switch_plugin :market, on: true
+      Market::SearchSnapshot.create!(domain: "acme.example", kind: "content_ideas", taken_at: Time.current,
+        data: {"ideas" => [{"keyword" => "frozen pipes", "volume" => 900, "difficulty" => 30, "peak" => {"month" => (Date.current.month + 2) % 12 + 1, "lift" => 220}}]})
+
+      get calendar_path
+      expect(response.body).to include("How the calendar works", "1 waiting", "No social channels yet")
+      get calendar_ideas_path
+      expect(response.body).to include("What to write next", "Write about “frozen pipes”", "900 searches a month", "badge--warning")
+
+      idea = Calendar::Ideas.new.find("market:idea:frozen-pipes")
+      post calendar_ideas_path, params: {source: idea.source}
+      item = Calendar::Item.find_by!(source: "market:idea:frozen-pipes")
+      expect(item).to have_attributes(state: "idea", kind: "post", scheduled_at: idea.on.in_time_zone.change(hour: 10))
+      expect(item.notes).to include("Market · coming into season", "900 searches a month")
+      get calendar_path(item: item.id)
+      expect(response.body).to include("Next: write it. Start the post on the site")
+    end
+
     it "adds an item with each channel's text, schedules it, and takes it off" do
       facebook = channel("facebook")
       x = channel("x")

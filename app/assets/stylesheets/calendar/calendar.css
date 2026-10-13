@@ -206,4 +206,63 @@
   .calendar-when {
     inline-size: auto;
   }
+
+  /* How the calendar works, across the top: ideas, write, schedule, published. */
+  .calendar-flow {
+    margin-block-end: var(--space-4);
+  }
+
+  .calendar-flow__steps {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  .calendar-flow__step {
+    align-items: center;
+    border-inline-start: 1px solid var(--gray-100);
+    color: inherit;
+    display: flex;
+    gap: var(--space-2);
+    padding: var(--space-3) var(--space-4);
+    text-decoration: none;
+
+    &:hover {
+      background-color: var(--gray-50);
+    }
+  }
+
+  li:first-child > .calendar-flow__step {
+    border-inline-start: 0;
+  }
+
+  .calendar-flow__number {
+    align-items: center;
+    background-color: var(--gray-100);
+    block-size: 1.5rem;
+    border-radius: 999px;
+    color: var(--gray-700);
+    display: inline-flex;
+    flex: none;
+    font-size: var(--text-xs);
+    font-weight: var(--weight-semibold);
+    inline-size: 1.5rem;
+    justify-content: center;
+  }
+
+  .calendar-flow__step--current .calendar-flow__number {
+    background-color: var(--accent-600);
+    color: white;
+  }
+
+  .calendar-flow__note {
+    border-block-start: 1px solid var(--gray-100);
+    padding: var(--space-2) var(--space-4);
+  }
+
+  .calendar-next {
+    color: var(--accent-700);
+  }
 }
